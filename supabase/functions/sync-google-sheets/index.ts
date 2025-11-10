@@ -203,10 +203,11 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
-    // Get target month from request body (format: "YYYY-MM")
-    const { targetMonth } = await req.json();
+    // Get target month or date from request body
+    // targetMonth format: "YYYY-MM", targetDate format: "YYYY-MM-DD"
+    const { targetMonth, targetDate } = await req.json();
 
-    console.log('Starting Google Sheets sync...', targetMonth ? `for ${targetMonth}` : '');
+    console.log('Starting Google Sheets sync...', targetMonth ? `for month ${targetMonth}` : targetDate ? `for day ${targetDate}` : '');
 
     // Create Supabase client with service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -248,7 +249,7 @@ Deno.serve(async (req) => {
     let leads = parseSheetData(sheetData);
     console.log(`Found ${leads.length} leads in sheet`);
 
-    // Filter by target month if specified
+    // Filter by target month or date if specified
     if (targetMonth) {
       const [year, month] = targetMonth.split('-').map(Number);
       leads = leads.filter(lead => {
@@ -261,7 +262,22 @@ Deno.serve(async (req) => {
           return false;
         }
       });
-      console.log(`Filtered to ${leads.length} leads for ${targetMonth}`);
+      console.log(`Filtered to ${leads.length} leads for month ${targetMonth}`);
+    } else if (targetDate) {
+      const [year, month, day] = targetDate.split('-').map(Number);
+      leads = leads.filter(lead => {
+        if (!lead.form_submitted_at) return false;
+        
+        try {
+          const leadDate = new Date(lead.form_submitted_at);
+          return leadDate.getFullYear() === year && 
+                 leadDate.getMonth() === month - 1 && 
+                 leadDate.getDate() === day;
+        } catch (e) {
+          return false;
+        }
+      });
+      console.log(`Filtered to ${leads.length} leads for day ${targetDate}`);
     }
 
     // Insert leads (skip duplicates by email/phone)

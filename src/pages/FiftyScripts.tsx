@@ -35,6 +35,8 @@ export default function FiftyScripts() {
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [syncDate, setSyncDate] = useState<Date | undefined>(new Date());
   const [viewMode, setViewMode] = useState<"current" | "all">("current");
+  const [syncMode, setSyncMode] = useState<"month" | "day">("day");
+  const [viewFilterMode, setViewFilterMode] = useState<"month" | "day">("month");
 
   useEffect(() => {
     fetchLeads();
@@ -50,7 +52,7 @@ export default function FiftyScripts() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedMonth, viewMode]);
+  }, [selectedMonth, viewMode, viewFilterMode]);
 
   const fetchSyncStatus = async () => {
     try {
@@ -74,14 +76,27 @@ export default function FiftyScripts() {
         .from("fifty_scripts_leads")
         .select("*");
 
-      // Filter by selected month if in current mode
+      // Filter by selected period if in current mode
       if (viewMode === "current" && selectedMonth) {
-        const startDate = startOfMonth(selectedMonth);
-        const endDate = endOfMonth(selectedMonth);
-        
-        query = query
-          .gte("form_submitted_at", startDate.toISOString())
-          .lte("form_submitted_at", endDate.toISOString());
+        if (viewFilterMode === "month") {
+          const startDate = startOfMonth(selectedMonth);
+          const endDate = endOfMonth(selectedMonth);
+          
+          query = query
+            .gte("form_submitted_at", startDate.toISOString())
+            .lte("form_submitted_at", endDate.toISOString());
+        } else {
+          // Filter by specific day
+          const startOfDay = new Date(selectedMonth);
+          startOfDay.setHours(0, 0, 0, 0);
+          
+          const endOfDay = new Date(selectedMonth);
+          endOfDay.setHours(23, 59, 59, 999);
+          
+          query = query
+            .gte("form_submitted_at", startOfDay.toISOString())
+            .lte("form_submitted_at", endOfDay.toISOString());
+        }
       }
 
       const { data, error } = await query.order("form_submitted_at", { ascending: false });
@@ -137,23 +152,29 @@ export default function FiftyScripts() {
     }
 
     if (!syncDate) {
-      toast.error("Selecione um mês para sincronizar.");
+      toast.error("Selecione uma data para sincronizar.");
       return;
     }
 
     setSyncing(true);
     try {
+      const body = syncMode === "month" 
+        ? { targetMonth: format(syncDate, "yyyy-MM") }
+        : { targetDate: format(syncDate, "yyyy-MM-dd") };
+
       const { data, error } = await supabase.functions.invoke("sync-google-sheets", {
-        body: {
-          targetMonth: format(syncDate, "yyyy-MM"),
-        },
+        body,
       });
       
       if (error) throw error;
       
       if (data?.success) {
+        const dateStr = syncMode === "month"
+          ? format(syncDate, "MMMM 'de' yyyy", { locale: ptBR })
+          : format(syncDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+        
         toast.success(
-          `Sincronização concluída! ${data.stats.inserted} novos leads, ${data.stats.skipped} ignorados para ${format(syncDate, "MMMM 'de' yyyy", { locale: ptBR })}.`
+          `Sincronização concluída! ${data.stats.inserted} novos leads, ${data.stats.skipped} ignorados para ${dateStr}.`
         );
         fetchLeads();
       } else {
@@ -203,40 +224,64 @@ export default function FiftyScripts() {
 
           {/* Sync Controls */}
           <Card className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-2 block">
-                  Selecionar mês para sincronizar:
-                </label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !syncDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {syncDate ? format(syncDate, "MMMM 'de' yyyy", { locale: ptBR }) : "Selecione um mês"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={syncDate}
-                      onSelect={setSyncDate}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="flex items-end">
-                <Button onClick={syncGoogleSheets} disabled={syncing || !syncActive}>
-                  <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                  Sincronizar
-                </Button>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">
+                    Modo de sincronização:
+                  </label>
+                  <Select
+                    value={syncMode}
+                    onValueChange={(value: "month" | "day") => setSyncMode(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="month">Importar Mês Inteiro</SelectItem>
+                      <SelectItem value="day">Importar Dia Específico</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-2 block">
+                    {syncMode === "month" ? "Selecionar mês:" : "Selecionar dia:"}
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !syncDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {syncDate 
+                          ? syncMode === "month"
+                            ? format(syncDate, "MMMM 'de' yyyy", { locale: ptBR })
+                            : format(syncDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                          : "Selecione uma data"
+                        }
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={syncDate}
+                        onSelect={setSyncDate}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={syncGoogleSheets} disabled={syncing || !syncActive}>
+                    <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                    Sincronizar
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
@@ -257,31 +302,71 @@ export default function FiftyScripts() {
             value={viewMode}
             onValueChange={(value: "current" | "all") => setViewMode(value)}
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="current">Filtrar por Mês</SelectItem>
+              <SelectItem value="current">Filtrar Período</SelectItem>
               <SelectItem value="all">Todos os Leads</SelectItem>
             </SelectContent>
           </Select>
 
           {viewMode === "current" && (
-            <Select
-              value={selectedMonth.toISOString()}
-              onValueChange={(value) => setSelectedMonth(new Date(value))}
-            >
-              <SelectTrigger className="w-[220px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {monthOptions.map((option) => (
-                  <SelectItem key={option.value.toISOString()} value={option.value.toISOString()}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <>
+              <Select
+                value={viewFilterMode}
+                onValueChange={(value: "month" | "day") => setViewFilterMode(value)}
+              >
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="month">Por Mês</SelectItem>
+                  <SelectItem value="day">Por Dia</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {viewFilterMode === "month" ? (
+                <Select
+                  value={selectedMonth.toISOString()}
+                  onValueChange={(value) => setSelectedMonth(new Date(value))}
+                >
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((option) => (
+                      <SelectItem key={option.value.toISOString()} value={option.value.toISOString()}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[220px] justify-start text-left font-normal"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {format(selectedMonth, "dd/MM/yyyy")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedMonth}
+                      onSelect={(date) => date && setSelectedMonth(date)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+            </>
           )}
         </div>
 
