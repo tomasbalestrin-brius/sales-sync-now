@@ -115,30 +115,72 @@ function parseSheetData(data: any): SheetRow[] {
     return [];
   }
 
-  // Assume first row is headers
-  const headers = rows[0].map((h: string) => h.toLowerCase().trim());
-  const nameIndex = headers.findIndex((h: string) => h.includes('nome') || h.includes('name'));
-  const emailIndex = headers.findIndex((h: string) => h.includes('email'));
-  const phoneIndex = headers.findIndex((h: string) => h.includes('telefone') || h.includes('phone') || h.includes('celular'));
-  const sourceIndex = headers.findIndex((h: string) => h.includes('fonte') || h.includes('source') || h.includes('origem'));
-  const notesIndex = headers.findIndex((h: string) => h.includes('observ') || h.includes('notes') || h.includes('nota'));
+  // First row is headers
+  const headers = rows[0];
+  
+  // Find column indices based on your sheet structure
+  const nameIndex = headers.findIndex((h: string) => 
+    h?.includes('nome completo') || h?.includes('name')
+  );
+  const emailIndex = headers.findIndex((h: string) => 
+    h?.toLowerCase().includes('email') || h?.toLowerCase().includes('e-mail')
+  );
+  const phoneIndex = headers.findIndex((h: string) => 
+    h?.includes('WhatsApp') || h?.includes('whatsapp') || h?.includes('telefone')
+  );
+  const sourceIndex = headers.findIndex((h: string) => 
+    h?.toLowerCase() === 'fonte' || h?.toLowerCase() === 'source'
+  );
+  const businessIndex = headers.findIndex((h: string) => 
+    h?.includes('negócio') || h?.includes('business')
+  );
+  const nicheIndex = headers.findIndex((h: string) => 
+    h?.includes('nicho') || h?.includes('niche')
+  );
+  const revenueIndex = headers.findIndex((h: string) => 
+    h?.includes('faturamento') || h?.includes('revenue')
+  );
+
+  console.log('Column mapping:', {
+    nameIndex,
+    emailIndex,
+    phoneIndex,
+    sourceIndex,
+    businessIndex,
+    nicheIndex,
+    revenueIndex,
+  });
 
   const leads: SheetRow[] = [];
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     
-    if (!row[nameIndex]) continue; // Skip rows without name
+    // Skip empty rows
+    if (!row || row.length === 0 || !row[nameIndex]) continue;
+
+    // Build notes from additional fields
+    const notesArray = [];
+    if (businessIndex >= 0 && row[businessIndex]) {
+      notesArray.push(`Negócio: ${row[businessIndex]}`);
+    }
+    if (nicheIndex >= 0 && row[nicheIndex]) {
+      notesArray.push(`Nicho: ${row[nicheIndex]}`);
+    }
+    if (revenueIndex >= 0 && row[revenueIndex]) {
+      notesArray.push(`Faturamento: ${row[revenueIndex]}`);
+    }
 
     leads.push({
       name: row[nameIndex] || '',
       email: emailIndex >= 0 ? row[emailIndex] : undefined,
       phone: phoneIndex >= 0 ? row[phoneIndex] : undefined,
       source: sourceIndex >= 0 ? (row[sourceIndex] || 'Google Sheets') : 'Google Sheets',
-      notes: notesIndex >= 0 ? row[notesIndex] : undefined,
+      notes: notesArray.length > 0 ? notesArray.join(' | ') : undefined,
     });
   }
 
+  console.log(`Parsed ${leads.length} leads from sheet`);
   return leads;
 }
 
