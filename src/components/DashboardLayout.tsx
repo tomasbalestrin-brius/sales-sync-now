@@ -1,8 +1,9 @@
 import { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Users, Calendar, TrendingUp, LogOut } from "lucide-react";
+import { BarChart3, Users, Calendar, TrendingUp, LogOut, UserCog } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -10,6 +11,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { signOut, user } = useAuth();
+  const { role } = useUserRole();
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,13 +56,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <Calendar className="h-5 w-5" />
               <span className="font-medium">Agenda</span>
             </NavLink>
+
+            {(role === "admin" || role === "gestor") && (
+              <NavLink
+                to="/sdr"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                activeClassName="bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+              >
+                <UserCog className="h-5 w-5" />
+                <span className="font-medium">SDR</span>
+              </NavLink>
+            )}
           </nav>
 
           <div className="p-4 border-t border-border">
             <div className="flex items-center justify-between mb-2">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{user?.email}</p>
-                <p className="text-xs text-muted-foreground">Closer</p>
+                <p className="text-xs text-muted-foreground capitalize">{role || "Carregando..."}</p>
               </div>
             </div>
             <Button

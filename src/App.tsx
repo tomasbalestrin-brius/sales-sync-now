@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import FiftyScripts from "./pages/FiftyScripts";
 import Agenda from "./pages/Agenda";
+import SDR from "./pages/SDR";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Agenda />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sdr"
+              element={
+                <ProtectedRoute>
+                  <SDR />
                 </ProtectedRoute>
               }
             />
