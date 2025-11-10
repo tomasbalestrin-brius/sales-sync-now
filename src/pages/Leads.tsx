@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface Lead {
@@ -23,6 +23,7 @@ export default function Leads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchLeads();
@@ -72,6 +73,27 @@ export default function Leads() {
     return colors[status] || "bg-muted";
   };
 
+  const syncGoogleSheets = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-google-sheets");
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success(
+          `Sincronização concluída! ${data.stats.inserted} novos leads, ${data.stats.skipped} ignorados.`
+        );
+      } else {
+        throw new Error(data?.error || "Erro desconhecido");
+      }
+    } catch (error: any) {
+      toast.error("Erro ao sincronizar: " + error.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -80,10 +102,16 @@ export default function Leads() {
             <h1 className="text-3xl font-bold">Leads</h1>
             <p className="text-muted-foreground">Gerencie seus leads</p>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Lead
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={syncGoogleSheets} disabled={syncing}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+              Sincronizar Planilha
+            </Button>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Lead
+            </Button>
+          </div>
         </div>
 
         <div className="flex gap-4">
