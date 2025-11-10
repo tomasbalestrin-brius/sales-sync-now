@@ -91,7 +91,9 @@ async function getGoogleSheetsAccessToken() {
 }
 
 async function fetchSheetData(accessToken: string, sheetId: string) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A:Z`;
+  // Use the specific sheet name from your Google Sheets
+  const sheetName = '01 - 50 SCRIPTS';
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}!A:Z`;
   
   const response = await fetch(url, {
     headers: {
