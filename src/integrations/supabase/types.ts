@@ -63,15 +63,16 @@ export type Database = {
             foreignKeyName: "calls_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "fifty_scripts_leads"
             referencedColumns: ["id"]
           },
         ]
       }
-      leads: {
+      fifty_scripts_leads: {
         Row: {
           created_at: string
           email: string | null
+          form_submitted_at: string | null
           id: string
           name: string
           notes: string | null
@@ -83,6 +84,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email?: string | null
+          form_submitted_at?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -94,6 +96,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string | null
+          form_submitted_at?: string | null
           id?: string
           name?: string
           notes?: string | null
@@ -175,6 +178,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sync_config: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          product_name: string
+          sheet_id: string
+          sheet_tab_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          product_name: string
+          sheet_id: string
+          sheet_tab_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          product_name?: string
+          sheet_id?: string
+          sheet_tab_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

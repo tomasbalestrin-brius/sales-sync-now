@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import Leads from "./pages/Leads";
+import FiftyScripts from "./pages/FiftyScripts";
 import Agenda from "./pages/Agenda";
 import NotFound from "./pages/NotFound";
 
@@ -46,10 +46,10 @@ const App = () => (
               }
             />
             <Route
-              path="/leads"
+              path="/fifty-scripts"
               element={
                 <ProtectedRoute>
-                  <Leads />
+                  <FiftyScripts />
                 </ProtectedRoute>
               }
             />

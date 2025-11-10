@@ -16,21 +16,24 @@ interface Lead {
   phone: string | null;
   source: string;
   status: string;
+  form_submitted_at: string | null;
   created_at: string;
 }
 
-export default function Leads() {
+export default function FiftyScripts() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncActive, setSyncActive] = useState(true);
 
   useEffect(() => {
     fetchLeads();
+    fetchSyncStatus();
 
     const channel = supabase
-      .channel("leads-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => {
+      .channel("fifty-scripts-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fifty_scripts_leads" }, () => {
         fetchLeads();
       })
       .subscribe();
@@ -40,10 +43,26 @@ export default function Leads() {
     };
   }, []);
 
+  const fetchSyncStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("sync_config")
+        .select("is_active")
+        .eq("product_name", "50 Scripts")
+        .single();
+
+      if (!error && data) {
+        setSyncActive(data.is_active);
+      }
+    } catch (error: any) {
+      console.error("Erro ao buscar status de sincronização:", error);
+    }
+  };
+
   const fetchLeads = async () => {
     try {
       const { data, error } = await supabase
-        .from("leads")
+        .from("fifty_scripts_leads")
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -73,7 +92,30 @@ export default function Leads() {
     return colors[status] || "bg-muted";
   };
 
+  const toggleSync = async () => {
+    try {
+      const { error } = await supabase
+        .from("sync_config")
+        .update({ is_active: !syncActive })
+        .eq("product_name", "50 Scripts");
+
+      if (error) throw error;
+
+      setSyncActive(!syncActive);
+      toast.success(
+        syncActive ? "Sincronização pausada" : "Sincronização ativada"
+      );
+    } catch (error: any) {
+      toast.error("Erro ao alterar status: " + error.message);
+    }
+  };
+
   const syncGoogleSheets = async () => {
+    if (!syncActive) {
+      toast.error("Sincronização está pausada. Ative-a primeiro.");
+      return;
+    }
+
     setSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("sync-google-sheets");
@@ -99,11 +141,17 @@ export default function Leads() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Leads</h1>
-            <p className="text-muted-foreground">Gerencie seus leads</p>
+            <h1 className="text-3xl font-bold">50 Scripts</h1>
+            <p className="text-muted-foreground">Gerencie leads do produto 50 Scripts</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={syncGoogleSheets} disabled={syncing}>
+            <Button 
+              variant={syncActive ? "destructive" : "default"} 
+              onClick={toggleSync}
+            >
+              {syncActive ? "Pausar Sincronização" : "Ativar Sincronização"}
+            </Button>
+            <Button variant="outline" onClick={syncGoogleSheets} disabled={syncing || !syncActive}>
               <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
               Sincronizar Planilha
             </Button>
@@ -135,20 +183,21 @@ export default function Leads() {
                 <TableHead>Telefone</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Data</TableHead>
+                <TableHead>Preenchimento</TableHead>
+                <TableHead>Cadastro</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center">
+                  <TableCell colSpan={8} className="text-center">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center">
+                  <TableCell colSpan={8} className="text-center">
                     Nenhum lead encontrado
                   </TableCell>
                 </TableRow>
@@ -165,6 +214,11 @@ export default function Leads() {
                       <Badge className={getStatusColor(lead.status)}>
                         {lead.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {lead.form_submitted_at
+                        ? new Date(lead.form_submitted_at).toLocaleDateString("pt-BR")
+                        : "-"}
                     </TableCell>
                     <TableCell>
                       {new Date(lead.created_at).toLocaleDateString("pt-BR")}

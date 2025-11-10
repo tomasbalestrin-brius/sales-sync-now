@@ -38,12 +38,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </NavLink>
 
             <NavLink
-              to="/leads"
+              to="/fifty-scripts"
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
               activeClassName="bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
             >
               <Users className="h-5 w-5" />
-              <span className="font-medium">Leads</span>
+              <span className="font-medium">50 Scripts</span>
             </NavLink>
 
             <NavLink

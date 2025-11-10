@@ -31,8 +31,8 @@ export default function Dashboard() {
 
     // Set up realtime subscriptions
     const leadsChannel = supabase
-      .channel("dashboard-leads")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, fetchStats)
+      .channel("dashboard-fifty-scripts")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fifty_scripts_leads" }, fetchStats)
       .subscribe();
 
     const callsChannel = supabase
@@ -53,7 +53,7 @@ export default function Dashboard() {
   }, []);
 
   const fetchStats = async () => {
-    const { data: leads } = await supabase.from("leads").select("id");
+    const { data: leads } = await supabase.from("fifty_scripts_leads").select("id");
     const { data: calls } = await supabase.from("calls").select("id, status");
     const { data: sales } = await supabase.from("sales").select("id, value");
 

@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 interface SheetRow {
+  form_submitted_at?: string;
   name: string;
   email?: string;
   phone?: string;
@@ -90,9 +91,7 @@ async function getGoogleSheetsAccessToken() {
   return tokenData.access_token;
 }
 
-async function fetchSheetData(accessToken: string, sheetId: string) {
-  // Use the specific sheet name from your Google Sheets
-  const sheetName = 'Qualificados';
+async function fetchSheetData(accessToken: string, sheetId: string, sheetName: string) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}!A:Z`;
   
   console.log('Sheet ID being used:', sheetId);
@@ -123,6 +122,9 @@ function parseSheetData(data: any): SheetRow[] {
 
   // First row is headers
   const headers = rows[0];
+  
+  // Column A is index 0 (form submission date)
+  const dateIndex = 0;
   
   // Find column indices based on your sheet structure
   const nameIndex = headers.findIndex((h: string) => 
@@ -178,6 +180,7 @@ function parseSheetData(data: any): SheetRow[] {
     }
 
     leads.push({
+      form_submitted_at: row[dateIndex] || undefined,
       name: row[nameIndex] || '',
       email: emailIndex >= 0 ? row[emailIndex] : undefined,
       phone: phoneIndex >= 0 ? row[phoneIndex] : undefined,
@@ -199,16 +202,35 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const sheetId = Deno.env.get('GOOGLE_SHEET_ID');
-
-    if (!sheetId) {
-      throw new Error('GOOGLE_SHEET_ID not configured');
-    }
 
     console.log('Starting Google Sheets sync...');
 
     // Create Supabase client with service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get sync config for 50 Scripts
+    const { data: syncConfig, error: configError } = await supabase
+      .from('sync_config')
+      .select('*')
+      .eq('product_name', '50 Scripts')
+      .single();
+
+    if (configError || !syncConfig) {
+      throw new Error('Sync configuration not found for 50 Scripts');
+    }
+
+    if (!syncConfig.is_active) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Sync is currently disabled for 50 Scripts',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
 
     // Get Google Sheets access token
     console.log('Getting Google Sheets access token...');
@@ -216,7 +238,7 @@ Deno.serve(async (req) => {
 
     // Fetch sheet data
     console.log('Fetching sheet data...');
-    const sheetData = await fetchSheetData(accessToken, sheetId);
+    const sheetData = await fetchSheetData(accessToken, syncConfig.sheet_id, syncConfig.sheet_tab_name);
 
     // Parse data
     console.log('Parsing sheet data...');
@@ -230,7 +252,7 @@ Deno.serve(async (req) => {
     for (const lead of leads) {
       // Check if lead already exists
       const { data: existing } = await supabase
-        .from('leads')
+        .from('fifty_scripts_leads')
         .select('id')
         .or(`email.eq.${lead.email},phone.eq.${lead.phone}`)
         .maybeSingle();
@@ -240,9 +262,20 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Parse date from Google Sheets format (e.g., "10/11/2025 17:30:45")
+      let parsedDate = null;
+      if (lead.form_submitted_at) {
+        try {
+          const dateStr = lead.form_submitted_at;
+          parsedDate = new Date(dateStr).toISOString();
+        } catch (e) {
+          console.error('Error parsing date:', e);
+        }
+      }
+
       // Insert new lead
       const { error } = await supabase
-        .from('leads')
+        .from('fifty_scripts_leads')
         .insert({
           name: lead.name,
           email: lead.email,
@@ -250,6 +283,7 @@ Deno.serve(async (req) => {
           source: lead.source,
           notes: lead.notes,
           status: 'novo',
+          form_submitted_at: parsedDate,
         });
 
       if (error) {
@@ -259,6 +293,12 @@ Deno.serve(async (req) => {
         inserted++;
       }
     }
+
+    // Update last sync timestamp
+    await supabase
+      .from('sync_config')
+      .update({ last_sync_at: new Date().toISOString() })
+      .eq('product_name', '50 Scripts');
 
     console.log(`Sync complete. Inserted: ${inserted}, Skipped: ${skipped}`);
 
