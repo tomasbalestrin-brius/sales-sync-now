@@ -49,6 +49,7 @@ export default function FiftyScripts() {
   const [filterBySdr, setFilterBySdr] = useState<string>("all");
   const [sdrs, setSdrs] = useState<Array<{ id: string; full_name: string }>>([]);
   const [syncedLeads, setSyncedLeads] = useState<Lead[]>([]);
+  const [removingDuplicates, setRemovingDuplicates] = useState(false);
 
   useEffect(() => {
     fetchLeads();
@@ -215,6 +216,31 @@ export default function FiftyScripts() {
       );
     } catch (error: any) {
       toast.error("Erro ao alterar status: " + error.message);
+    }
+  };
+
+  const removeDuplicates = async () => {
+    setRemovingDuplicates(true);
+    try {
+      const { data, error } = await supabase.rpc('remove_duplicate_leads');
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const result = data[0];
+        toast.success(`${result.duplicates_removed} leads duplicados foram removidos!`);
+        fetchLeads();
+        // Refresh synced leads if any
+        if (syncedLeads.length > 0 && syncDate) {
+          await syncGoogleSheets();
+        }
+      } else {
+        toast.info("Nenhum lead duplicado encontrado.");
+      }
+    } catch (error: any) {
+      toast.error("Erro ao remover duplicados: " + error.message);
+    } finally {
+      setRemovingDuplicates(false);
     }
   };
 
@@ -627,7 +653,16 @@ export default function FiftyScripts() {
                       </div>
                     </div>
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        onClick={removeDuplicates}
+                        disabled={removingDuplicates}
+                        variant="outline"
+                        size="lg"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${removingDuplicates ? 'animate-spin' : ''}`} />
+                        {removingDuplicates ? "Removendo..." : "Remover Duplicados"}
+                      </Button>
                       <Button 
                         onClick={syncGoogleSheets} 
                         disabled={syncing || !syncActive}

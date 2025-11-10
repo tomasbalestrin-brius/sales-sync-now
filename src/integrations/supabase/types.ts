@@ -260,6 +260,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      remove_duplicate_leads: {
+        Args: never
+        Returns: {
+          details: Json
+          duplicates_removed: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "gestor" | "closer" | "sdr"
