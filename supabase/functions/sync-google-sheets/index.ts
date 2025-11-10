@@ -95,6 +95,10 @@ async function fetchSheetData(accessToken: string, sheetId: string) {
   const sheetName = 'Qualificados';
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}!A:Z`;
   
+  console.log('Sheet ID being used:', sheetId);
+  console.log('Sheet name:', sheetName);
+  console.log('Full URL:', url);
+  
   const response = await fetch(url, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
