@@ -49,6 +49,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </NavLink>
 
             <NavLink
+              to="/mpm"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              activeClassName="bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+            >
+              <Users className="h-5 w-5" />
+              <span className="font-medium">MPM</span>
+            </NavLink>
+
+            <NavLink
+              to="/teste"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              activeClassName="bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+            >
+              <Users className="h-5 w-5" />
+              <span className="font-medium">Teste</span>
+            </NavLink>
+
+            <NavLink
               to="/agenda"
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
               activeClassName="bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"

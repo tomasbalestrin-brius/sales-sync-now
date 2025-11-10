@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import FiftyScripts from "./pages/FiftyScripts";
+import MPM from "./pages/MPM";
+import Teste from "./pages/Teste";
 import Agenda from "./pages/Agenda";
 import SDR from "./pages/SDR";
 import NotFound from "./pages/NotFound";
@@ -51,6 +53,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <FiftyScripts />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/mpm"
+              element={
+                <ProtectedRoute>
+                  <MPM />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/teste"
+              element={
+                <ProtectedRoute>
+                  <Teste />
                 </ProtectedRoute>
               }
             />
