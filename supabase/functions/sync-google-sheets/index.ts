@@ -92,7 +92,7 @@ async function getGoogleSheetsAccessToken() {
 
 async function fetchSheetData(accessToken: string, sheetId: string) {
   // Use the specific sheet name from your Google Sheets
-  const sheetName = '01 - 50 SCRIPTS';
+  const sheetName = 'Qualificados';
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}!A:Z`;
   
   const response = await fetch(url, {
