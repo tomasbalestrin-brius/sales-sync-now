@@ -48,6 +48,7 @@ export default function FiftyScripts() {
   const [viewFilterMode, setViewFilterMode] = useState<"month" | "day">("month");
   const [filterBySdr, setFilterBySdr] = useState<string>("all");
   const [sdrs, setSdrs] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [syncedLeads, setSyncedLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
     fetchLeads();
@@ -113,6 +114,14 @@ export default function FiftyScripts() {
       let query = supabase
         .from("fifty_scripts_leads")
         .select("*");
+
+      // SDRs only see their assigned leads (RLS will handle this, but we add explicit filter)
+      if (role === "sdr") {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          query = query.eq("assigned_to", user.id);
+        }
+      }
 
       // Filter by SDR if selected (only for admin/gestor)
       if (filterBySdr !== "all" && (role === "admin" || role === "gestor")) {
@@ -221,6 +230,7 @@ export default function FiftyScripts() {
     }
 
     setSyncing(true);
+    setSyncedLeads([]); // Clear previous synced leads
     try {
       const body = syncMode === "month" 
         ? { targetMonth: format(syncDate, "yyyy-MM") }
@@ -240,6 +250,21 @@ export default function FiftyScripts() {
         toast.success(
           `Sincronização concluída! ${data.stats.inserted} novos leads, ${data.stats.skipped} ignorados para ${dateStr}.`
         );
+        
+        // Fetch the newly synced leads
+        if (data.stats.inserted > 0) {
+          const { data: newLeads } = await supabase
+            .from("fifty_scripts_leads")
+            .select("*")
+            .is("assigned_to", null)
+            .order("created_at", { ascending: false })
+            .limit(data.stats.inserted);
+          
+          if (newLeads) {
+            setSyncedLeads(newLeads);
+          }
+        }
+        
         fetchLeads();
       } else {
         throw new Error(data?.error || "Erro desconhecido");
@@ -506,89 +531,150 @@ export default function FiftyScripts() {
           {/* Sincronização Tab */}
           <TabsContent value="sync" className="space-y-6">
             {(role === "admin" || role === "gestor") ? (
-              <Card className="p-6">
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">Sincronizar Leads do Google Sheets</h2>
-                    <p className="text-muted-foreground">
-                      Importe leads de um período específico da planilha do Google Sheets
-                    </p>
-                  </div>
-
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Modo de sincronização
-                      </label>
-                      <Select
-                        value={syncMode}
-                        onValueChange={(value: "month" | "day") => setSyncMode(value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="month">Importar Mês Inteiro</SelectItem>
-                          <SelectItem value="day">Importar Dia Específico</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        {syncMode === "month" ? "Selecionar mês" : "Selecionar dia"}
-                      </label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !syncDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {syncDate 
-                              ? syncMode === "month"
-                                ? format(syncDate, "MMMM 'de' yyyy", { locale: ptBR })
-                                : format(syncDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                              : "Selecione uma data"
-                            }
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={syncDate}
-                            onSelect={setSyncDate}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button 
-                      onClick={syncGoogleSheets} 
-                      disabled={syncing || !syncActive}
-                      size="lg"
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                      {syncing ? "Sincronizando..." : "Sincronizar"}
-                    </Button>
-                  </div>
-
-                  {!syncActive && (
-                    <div className="p-4 bg-warning/10 border border-warning rounded-lg">
-                      <p className="text-sm text-warning-foreground">
-                        ⚠️ Sincronização está pausada. Ative-a no botão do topo da página.
+              <>
+                <Card className="p-6">
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold mb-2">Sincronizar Leads do Google Sheets</h2>
+                      <p className="text-muted-foreground">
+                        Importe leads de um período específico da planilha do Google Sheets
                       </p>
                     </div>
-                  )}
-                </div>
-              </Card>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          Modo de sincronização
+                        </label>
+                        <Select
+                          value={syncMode}
+                          onValueChange={(value: "month" | "day") => setSyncMode(value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="month">Importar Mês Inteiro</SelectItem>
+                            <SelectItem value="day">Importar Dia Específico</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          {syncMode === "month" ? "Selecionar mês" : "Selecionar dia"}
+                        </label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !syncDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {syncDate 
+                                ? syncMode === "month"
+                                  ? format(syncDate, "MMMM 'de' yyyy", { locale: ptBR })
+                                  : format(syncDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                                : "Selecione uma data"
+                              }
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={syncDate}
+                              onSelect={setSyncDate}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button 
+                        onClick={syncGoogleSheets} 
+                        disabled={syncing || !syncActive}
+                        size="lg"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                        {syncing ? "Sincronizando..." : "Sincronizar"}
+                      </Button>
+                    </div>
+
+                    {!syncActive && (
+                      <div className="p-4 bg-warning/10 border border-warning rounded-lg">
+                        <p className="text-sm text-warning-foreground">
+                          ⚠️ Sincronização está pausada. Ative-a no botão do topo da página.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+
+                {/* Synced Leads List */}
+                {syncedLeads.length > 0 && (
+                  <Card>
+                    <div className="p-4 border-b flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold">
+                          Leads Sincronizados ({syncedLeads.length})
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Leads recém-importados aguardando atribuição
+                        </p>
+                      </div>
+                      <BulkAssignLeadsDialog onAssigned={() => {
+                        fetchLeads();
+                        setSyncedLeads([]);
+                      }} />
+                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>E-mail</TableHead>
+                          <TableHead>Telefone</TableHead>
+                          <TableHead>Origem</TableHead>
+                          <TableHead>Data Formulário</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {syncedLeads.map((lead) => (
+                          <TableRow key={lead.id}>
+                            <TableCell className="font-medium">{lead.name}</TableCell>
+                            <TableCell>{lead.email || "-"}</TableCell>
+                            <TableCell>{lead.phone || "-"}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{lead.source}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              {lead.form_submitted_at
+                                ? new Date(lead.form_submitted_at).toLocaleDateString("pt-BR")
+                                : "-"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <AssignLeadDialog
+                                leadId={lead.id}
+                                currentAssignedTo={lead.assigned_to || undefined}
+                                onAssigned={() => {
+                                  fetchLeads();
+                                  setSyncedLeads(syncedLeads.filter(l => l.id !== lead.id));
+                                }}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Card>
+                )}
+              </>
             ) : (
               <Card className="p-6 text-center">
                 <p className="text-muted-foreground">
