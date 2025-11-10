@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,6 +31,9 @@ export default function SDR() {
   const [newUserName, setNewUserName] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "gestor" | "closer" | "sdr">("sdr");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
+  const [editRole, setEditRole] = useState<"admin" | "gestor" | "closer" | "sdr">("sdr");
 
   useEffect(() => {
     if (role === "admin" || role === "gestor") {
@@ -135,6 +138,41 @@ export default function SDR() {
     }
   };
 
+  const openEditDialog = (user: UserWithRole) => {
+    setEditingUser(user);
+    setEditRole(user.role as "admin" | "gestor" | "closer" | "sdr");
+    setEditDialogOpen(true);
+  };
+
+  const updateUserRole = async () => {
+    if (!editingUser) return;
+
+    try {
+      // Verificar se é o último admin
+      if (editingUser.role === "admin" && editRole !== "admin") {
+        const adminCount = users.filter((u) => u.role === "admin").length;
+        if (adminCount <= 1) {
+          toast.error("Não é possível remover o último administrador do sistema!");
+          return;
+        }
+      }
+
+      const { error } = await supabase
+        .from("user_roles")
+        .update({ role: editRole })
+        .eq("user_id", editingUser.id);
+
+      if (error) throw error;
+
+      toast.success("Função atualizada com sucesso!");
+      setEditDialogOpen(false);
+      setEditingUser(null);
+      fetchUsers();
+    } catch (error: any) {
+      toast.error("Erro ao atualizar função: " + error.message);
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       user.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -168,7 +206,7 @@ export default function SDR() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Gerenciar SDRs e Usuários</h1>
+            <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
             <p className="text-muted-foreground">
               Cadastre e gerencie todos os usuários do sistema
             </p>
@@ -316,15 +354,26 @@ export default function SDR() {
                       {new Date(user.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {role === "admin" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteUser(user.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
+                      <div className="flex gap-2 justify-end">
+                        {role === "admin" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(user)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteUser(user.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -332,6 +381,46 @@ export default function SDR() {
             </TableBody>
           </Table>
         </Card>
+
+        {/* Edit Role Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Alterar Função do Usuário</DialogTitle>
+            </DialogHeader>
+            {editingUser && (
+              <div className="space-y-4">
+                <div>
+                  <Label>Usuário</Label>
+                  <p className="text-sm font-medium">{editingUser.full_name}</p>
+                  <p className="text-xs text-muted-foreground">{editingUser.email}</p>
+                </div>
+                <div>
+                  <Label htmlFor="edit-role">Nova Função</Label>
+                  <Select
+                    value={editRole}
+                    onValueChange={(value: "admin" | "gestor" | "closer" | "sdr") =>
+                      setEditRole(value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="gestor">Gestor</SelectItem>
+                      <SelectItem value="closer">Closer</SelectItem>
+                      <SelectItem value="sdr">SDR</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={updateUserRole} className="w-full">
+                  Salvar Alteração
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
