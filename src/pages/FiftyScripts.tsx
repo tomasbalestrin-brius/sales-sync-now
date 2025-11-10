@@ -251,18 +251,50 @@ export default function FiftyScripts() {
           `Sincronização concluída! ${data.stats.inserted} novos leads, ${data.stats.skipped} ignorados para ${dateStr}.`
         );
         
-        // Fetch the newly synced leads
-        if (data.stats.inserted > 0) {
-          const { data: newLeads } = await supabase
-            .from("fifty_scripts_leads")
-            .select("*")
-            .is("assigned_to", null)
-            .order("created_at", { ascending: false })
-            .limit(data.stats.inserted);
+        // Fetch all leads from the synced period
+        let syncQuery = supabase
+          .from("fifty_scripts_leads")
+          .select("*")
+          .order("form_submitted_at", { ascending: false });
+
+        if (syncMode === "month") {
+          const startDate = new Date(syncDate.getFullYear(), syncDate.getMonth(), 1);
+          const endDate = new Date(syncDate.getFullYear(), syncDate.getMonth() + 1, 0, 23, 59, 59);
           
-          if (newLeads) {
-            setSyncedLeads(newLeads);
-          }
+          syncQuery = syncQuery
+            .gte("form_submitted_at", startDate.toISOString())
+            .lte("form_submitted_at", endDate.toISOString());
+        } else {
+          const startOfDay = new Date(syncDate);
+          startOfDay.setHours(0, 0, 0, 0);
+          
+          const endOfDay = new Date(syncDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          
+          syncQuery = syncQuery
+            .gte("form_submitted_at", startOfDay.toISOString())
+            .lte("form_submitted_at", endOfDay.toISOString());
+        }
+
+        const { data: periodLeads } = await syncQuery;
+        
+        if (periodLeads) {
+          // Fetch profile names for assigned leads
+          const leadsWithProfiles = await Promise.all(
+            periodLeads.map(async (lead) => {
+              if (lead.assigned_to) {
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("full_name")
+                  .eq("id", lead.assigned_to)
+                  .single();
+                
+                return { ...lead, profiles: profile };
+              }
+              return lead;
+            })
+          );
+          setSyncedLeads(leadsWithProfiles);
         }
         
         fetchLeads();
