@@ -5,8 +5,18 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Users, Calendar, TrendingUp, DollarSign } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-interface Stats {
+interface FunnelStats {
   totalLeads: number;
+  novoLeads: number;
+  contatadoLeads: number;
+  qualificadoLeads: number;
+  agendadoLeads: number;
+}
+
+interface Stats {
+  fiftyScripts: FunnelStats;
+  mpm: FunnelStats;
+  teste: FunnelStats;
   scheduledCalls: number;
   completedCalls: number;
   totalSales: number;
@@ -17,7 +27,27 @@ interface Stats {
 
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({
-    totalLeads: 0,
+    fiftyScripts: {
+      totalLeads: 0,
+      novoLeads: 0,
+      contatadoLeads: 0,
+      qualificadoLeads: 0,
+      agendadoLeads: 0,
+    },
+    mpm: {
+      totalLeads: 0,
+      novoLeads: 0,
+      contatadoLeads: 0,
+      qualificadoLeads: 0,
+      agendadoLeads: 0,
+    },
+    teste: {
+      totalLeads: 0,
+      novoLeads: 0,
+      contatadoLeads: 0,
+      qualificadoLeads: 0,
+      agendadoLeads: 0,
+    },
     scheduledCalls: 0,
     completedCalls: 0,
     totalSales: 0,
@@ -30,9 +60,19 @@ export default function Dashboard() {
     fetchStats();
 
     // Set up realtime subscriptions
-    const leadsChannel = supabase
+    const fiftyScriptsChannel = supabase
       .channel("dashboard-fifty-scripts")
       .on("postgres_changes", { event: "*", schema: "public", table: "fifty_scripts_leads" }, fetchStats)
+      .subscribe();
+
+    const mpmChannel = supabase
+      .channel("dashboard-mpm")
+      .on("postgres_changes", { event: "*", schema: "public", table: "mpm_leads" }, fetchStats)
+      .subscribe();
+
+    const testeChannel = supabase
+      .channel("dashboard-teste")
+      .on("postgres_changes", { event: "*", schema: "public", table: "teste_leads" }, fetchStats)
       .subscribe();
 
     const callsChannel = supabase
@@ -46,14 +86,30 @@ export default function Dashboard() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(fiftyScriptsChannel);
+      supabase.removeChannel(mpmChannel);
+      supabase.removeChannel(testeChannel);
       supabase.removeChannel(callsChannel);
       supabase.removeChannel(salesChannel);
     };
   }, []);
 
   const fetchStats = async () => {
-    const { data: leads } = await supabase.from("fifty_scripts_leads").select("id");
+    // Fetch 50 Scripts leads
+    const { data: fiftyScriptsLeads } = await supabase
+      .from("fifty_scripts_leads")
+      .select("id, status");
+
+    // Fetch MPM leads
+    const { data: mpmLeads } = await supabase
+      .from("mpm_leads")
+      .select("id, status");
+
+    // Fetch Teste leads
+    const { data: testeLeads } = await supabase
+      .from("teste_leads")
+      .select("id, status");
+
     const { data: calls } = await supabase.from("calls").select("id, status");
     const { data: sales } = await supabase.from("sales").select("id, value");
 
@@ -70,8 +126,18 @@ export default function Dashboard() {
       ? (totalSales / completedCalls) * 100 
       : 0;
 
-    setStats({
+    const calculateFunnelStats = (leads: any[]): FunnelStats => ({
       totalLeads: leads?.length || 0,
+      novoLeads: leads?.filter((l) => l.status === "novo").length || 0,
+      contatadoLeads: leads?.filter((l) => l.status === "contatado").length || 0,
+      qualificadoLeads: leads?.filter((l) => l.status === "qualificado").length || 0,
+      agendadoLeads: leads?.filter((l) => l.status === "agendado").length || 0,
+    });
+
+    setStats({
+      fiftyScripts: calculateFunnelStats(fiftyScriptsLeads || []),
+      mpm: calculateFunnelStats(mpmLeads || []),
+      teste: calculateFunnelStats(testeLeads || []),
       scheduledCalls,
       completedCalls,
       totalSales,
@@ -81,11 +147,47 @@ export default function Dashboard() {
     });
   };
 
-  const chartData = [
-    { name: "Agendadas", value: stats.scheduledCalls },
-    { name: "Realizadas", value: stats.completedCalls },
-    { name: "Vendas", value: stats.totalSales },
+  const totalLeads = stats.fiftyScripts.totalLeads + stats.mpm.totalLeads + stats.teste.totalLeads;
+
+  const funnelChartData = [
+    { name: "50 Scripts", value: stats.fiftyScripts.totalLeads },
+    { name: "MPM", value: stats.mpm.totalLeads },
+    { name: "Teste", value: stats.teste.totalLeads },
   ];
+
+  const FunnelCard = ({ title, funnelStats }: { title: string; funnelStats: FunnelStats }) => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Total de Leads</span>
+            <span className="text-2xl font-bold">{funnelStats.totalLeads}</span>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Novos</span>
+              <span className="font-medium">{funnelStats.novoLeads}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Contatados</span>
+              <span className="font-medium">{funnelStats.contatadoLeads}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Qualificados</span>
+              <span className="font-medium">{funnelStats.qualificadoLeads}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Agendados</span>
+              <span className="font-medium">{funnelStats.agendadoLeads}</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <DashboardLayout>
@@ -95,6 +197,7 @@ export default function Dashboard() {
           <p className="text-muted-foreground">Visão geral do desempenho</p>
         </div>
 
+        {/* Indicadores Gerais */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -102,8 +205,8 @@ export default function Dashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalLeads}</div>
-              <p className="text-xs text-muted-foreground">leads cadastrados</p>
+              <div className="text-2xl font-bold">{totalLeads}</div>
+              <p className="text-xs text-muted-foreground">todos os funis</p>
             </CardContent>
           </Card>
 
@@ -150,13 +253,24 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Indicadores por Funil */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Leads por Funil</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            <FunnelCard title="50 Scripts" funnelStats={stats.fiftyScripts} />
+            <FunnelCard title="MPM" funnelStats={stats.mpm} />
+            <FunnelCard title="Teste" funnelStats={stats.teste} />
+          </div>
+        </div>
+
+        {/* Gráfico de Comparação de Funis */}
         <Card>
           <CardHeader>
-            <CardTitle>Desempenho</CardTitle>
+            <CardTitle>Distribuição de Leads por Funil</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
+              <BarChart data={funnelChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
