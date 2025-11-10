@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, RefreshCw, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
@@ -262,303 +263,341 @@ export default function FiftyScripts() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">50 Scripts</h1>
-              <p className="text-muted-foreground">
-                Gerencie leads do produto 50 Scripts
-                {viewMode === "current" && ` - ${format(selectedMonth, "MMMM 'de' yyyy", { locale: ptBR })}`}
-              </p>
-            </div>
-            <div className="flex gap-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">50 Scripts</h1>
+            <p className="text-muted-foreground">
+              Gerencie leads do produto 50 Scripts
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {(role === "admin" || role === "gestor") && (
+              <>
+                <Button 
+                  variant={syncActive ? "destructive" : "default"} 
+                  onClick={toggleSync}
+                >
+                  {syncActive ? "Pausar Sincronização" : "Ativar Sincronização"}
+                </Button>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Lead
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <Tabs defaultValue="base" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+            <TabsTrigger value="base">Base de Leads</TabsTrigger>
+            <TabsTrigger value="sync">Sincronização</TabsTrigger>
+          </TabsList>
+
+          {/* Base de Leads Tab */}
+          <TabsContent value="base" className="space-y-6">
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar leads..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
               {(role === "admin" || role === "gestor") && (
                 <>
                   <BulkAssignLeadsDialog onAssigned={fetchLeads} />
-                  <Button 
-                    variant={syncActive ? "destructive" : "default"} 
-                    onClick={toggleSync}
-                  >
-                    {syncActive ? "Pausar Sincronização" : "Ativar Sincronização"}
-                  </Button>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Novo Lead
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Sync Controls */}
-          {(role === "admin" || role === "gestor") && (
-          <Card className="p-4">
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">
-                    Modo de sincronização:
-                  </label>
                   <Select
-                    value={syncMode}
-                    onValueChange={(value: "month" | "day") => setSyncMode(value)}
+                    value={filterBySdr}
+                    onValueChange={(value) => setFilterBySdr(value)}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Filtrar por SDR" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="month">Importar Mês Inteiro</SelectItem>
-                      <SelectItem value="day">Importar Dia Específico</SelectItem>
+                      <SelectItem value="all">Todos os SDRs</SelectItem>
+                      <SelectItem value="unassigned">Não atribuídos</SelectItem>
+                      {sdrs.map((sdr) => (
+                        <SelectItem key={sdr.id} value={sdr.id}>
+                          {sdr.full_name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">
-                    {syncMode === "month" ? "Selecionar mês:" : "Selecionar dia:"}
-                  </label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !syncDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {syncDate 
-                          ? syncMode === "month"
-                            ? format(syncDate, "MMMM 'de' yyyy", { locale: ptBR })
-                            : format(syncDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                          : "Selecione uma data"
-                        }
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={syncDate}
-                        onSelect={setSyncDate}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={syncGoogleSheets} disabled={syncing || !syncActive}>
-                    <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                    Sincronizar
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
-          )}
-        </div>
-
-        <div className="flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar leads..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {(role === "admin" || role === "gestor") && (
-            <Select
-              value={filterBySdr}
-              onValueChange={(value) => setFilterBySdr(value)}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrar por SDR" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os SDRs</SelectItem>
-                <SelectItem value="unassigned">Não atribuídos</SelectItem>
-                {sdrs.map((sdr) => (
-                  <SelectItem key={sdr.id} value={sdr.id}>
-                    {sdr.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          
-          <Select
-            value={viewMode}
-            onValueChange={(value: "current" | "all") => setViewMode(value)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="current">Filtrar Período</SelectItem>
-              <SelectItem value="all">Todos os Leads</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {viewMode === "current" && (
-            <>
+                </>
+              )}
+              
               <Select
-                value={viewFilterMode}
-                onValueChange={(value: "month" | "day") => setViewFilterMode(value)}
+                value={viewMode}
+                onValueChange={(value: "current" | "all") => setViewMode(value)}
               >
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="month">Por Mês</SelectItem>
-                  <SelectItem value="day">Por Dia</SelectItem>
+                  <SelectItem value="current">Filtrar Período</SelectItem>
+                  <SelectItem value="all">Todos os Leads</SelectItem>
                 </SelectContent>
               </Select>
 
-              {viewFilterMode === "month" ? (
-                <Select
-                  value={selectedMonth.toISOString()}
-                  onValueChange={(value) => setSelectedMonth(new Date(value))}
-                >
-                  <SelectTrigger className="w-[220px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {monthOptions.map((option) => (
-                      <SelectItem key={option.value.toISOString()} value={option.value.toISOString()}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[220px] justify-start text-left font-normal"
-                      )}
+              {viewMode === "current" && (
+                <>
+                  <Select
+                    value={viewFilterMode}
+                    onValueChange={(value: "month" | "day") => setViewFilterMode(value)}
+                  >
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="month">Por Mês</SelectItem>
+                      <SelectItem value="day">Por Dia</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {viewFilterMode === "month" ? (
+                    <Select
+                      value={selectedMonth.toISOString()}
+                      onValueChange={(value) => setSelectedMonth(new Date(value))}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(selectedMonth, "dd/MM/yyyy")}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedMonth}
-                      onSelect={(date) => date && setSelectedMonth(date)}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Stats Card */}
-        <Card className="p-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total de Leads</p>
-              <p className="text-2xl font-bold">{filteredLeads.length}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Novos</p>
-              <p className="text-2xl font-bold">
-                {filteredLeads.filter((l) => l.status === "novo").length}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Agendados</p>
-              <p className="text-2xl font-bold">
-                {filteredLeads.filter((l) => l.status === "agendado").length}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Atribuído a</TableHead>
-                <TableHead>Preenchimento</TableHead>
-                <TableHead>Cadastro</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center">
-                    Carregando...
-                  </TableCell>
-                </TableRow>
-              ) : filteredLeads.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center">
-                    Nenhum lead encontrado
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredLeads.map((lead) => (
-                  <TableRow key={lead.id}>
-                    <TableCell className="font-medium">{lead.name}</TableCell>
-                    <TableCell>{lead.email || "-"}</TableCell>
-                    <TableCell>{lead.phone || "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{lead.source}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(lead.status)}>
-                        {lead.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {lead.profiles ? (
-                        <Badge variant="outline">{lead.profiles.full_name}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">Não atribuído</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {lead.form_submitted_at
-                        ? new Date(lead.form_submitted_at).toLocaleDateString("pt-BR")
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(lead.created_at).toLocaleDateString("pt-BR")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        {(role === "admin" || role === "gestor") && (
-                          <AssignLeadDialog
-                            leadId={lead.id}
-                            currentAssignedTo={lead.assigned_to || undefined}
-                            onAssigned={fetchLeads}
-                          />
-                        )}
-                        <Button variant="ghost" size="sm">
-                          Agendar Call
+                      <SelectTrigger className="w-[220px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {monthOptions.map((option) => (
+                          <SelectItem key={option.value.toISOString()} value={option.value.toISOString()}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-[220px] justify-start text-left font-normal"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {format(selectedMonth, "dd/MM/yyyy")}
                         </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedMonth}
+                          onSelect={(date) => date && setSelectedMonth(date)}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </>
               )}
-            </TableBody>
-          </Table>
-        </Card>
+            </div>
+
+            {/* Stats Card */}
+            <Card className="p-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total de Leads</p>
+                  <p className="text-2xl font-bold">{filteredLeads.length}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Novos</p>
+                  <p className="text-2xl font-bold">
+                    {filteredLeads.filter((l) => l.status === "novo").length}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Agendados</p>
+                  <p className="text-2xl font-bold">
+                    {filteredLeads.filter((l) => l.status === "agendado").length}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>E-mail</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Origem</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Atribuído a</TableHead>
+                    <TableHead>Preenchimento</TableHead>
+                    <TableHead>Cadastro</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center">
+                        Carregando...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredLeads.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center">
+                        Nenhum lead encontrado
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredLeads.map((lead) => (
+                      <TableRow key={lead.id}>
+                        <TableCell className="font-medium">{lead.name}</TableCell>
+                        <TableCell>{lead.email || "-"}</TableCell>
+                        <TableCell>{lead.phone || "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{lead.source}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(lead.status)}>
+                            {lead.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {lead.profiles ? (
+                            <Badge variant="outline">{lead.profiles.full_name}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">Não atribuído</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {lead.form_submitted_at
+                            ? new Date(lead.form_submitted_at).toLocaleDateString("pt-BR")
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(lead.created_at).toLocaleDateString("pt-BR")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            {(role === "admin" || role === "gestor") && (
+                              <AssignLeadDialog
+                                leadId={lead.id}
+                                currentAssignedTo={lead.assigned_to || undefined}
+                                onAssigned={fetchLeads}
+                              />
+                            )}
+                            <Button variant="ghost" size="sm">
+                              Agendar Call
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+
+          {/* Sincronização Tab */}
+          <TabsContent value="sync" className="space-y-6">
+            {(role === "admin" || role === "gestor") ? (
+              <Card className="p-6">
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">Sincronizar Leads do Google Sheets</h2>
+                    <p className="text-muted-foreground">
+                      Importe leads de um período específico da planilha do Google Sheets
+                    </p>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Modo de sincronização
+                      </label>
+                      <Select
+                        value={syncMode}
+                        onValueChange={(value: "month" | "day") => setSyncMode(value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="month">Importar Mês Inteiro</SelectItem>
+                          <SelectItem value="day">Importar Dia Específico</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        {syncMode === "month" ? "Selecionar mês" : "Selecionar dia"}
+                      </label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !syncDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {syncDate 
+                              ? syncMode === "month"
+                                ? format(syncDate, "MMMM 'de' yyyy", { locale: ptBR })
+                                : format(syncDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                              : "Selecione uma data"
+                            }
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={syncDate}
+                            onSelect={setSyncDate}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={syncGoogleSheets} 
+                      disabled={syncing || !syncActive}
+                      size="lg"
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                      {syncing ? "Sincronizando..." : "Sincronizar"}
+                    </Button>
+                  </div>
+
+                  {!syncActive && (
+                    <div className="p-4 bg-warning/10 border border-warning rounded-lg">
+                      <p className="text-sm text-warning-foreground">
+                        ⚠️ Sincronização está pausada. Ative-a no botão do topo da página.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-6 text-center">
+                <p className="text-muted-foreground">
+                  Você não tem permissão para acessar a sincronização
+                </p>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
