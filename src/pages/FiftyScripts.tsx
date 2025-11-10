@@ -17,6 +17,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { AssignLeadDialog } from "@/components/AssignLeadDialog";
 import { BulkAssignLeadsDialog } from "@/components/BulkAssignLeadsDialog";
+import { ScheduleLeadButton } from "@/components/ScheduleLeadButton";
 import { useUserRole } from "@/hooks/useUserRole";
 
 interface Lead {
@@ -573,9 +574,15 @@ export default function FiftyScripts() {
                                 onAssigned={fetchLeads}
                               />
                             )}
-                            <Button variant="ghost" size="sm">
-                              Agendar Call
-                            </Button>
+                            {lead.assigned_to && (
+                              <ScheduleLeadButton
+                                leadId={lead.id}
+                                leadName={lead.name}
+                                leadPhone={lead.phone || ""}
+                                leadEmail={lead.email || undefined}
+                                tableName="fifty_scripts_leads"
+                              />
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AssignLeadDialog } from "@/components/AssignLeadDialog";
 import { BulkAssignLeadsDialog } from "@/components/BulkAssignLeadsDialog";
+import { ScheduleLeadButton } from "@/components/ScheduleLeadButton";
 
 interface Lead {
   id: string;
@@ -443,7 +444,17 @@ export default function Teste() {
                           </Badge>
                         </TableCell>
                         <TableCell>{lead.assigned_user_name || "Não atribuído"}</TableCell>
-                        <TableCell>-</TableCell>
+                        <TableCell>
+                          {lead.assigned_to && (
+                            <ScheduleLeadButton
+                              leadId={lead.id}
+                              leadName={lead.name}
+                              leadPhone={lead.phone || ""}
+                              leadEmail={lead.email || undefined}
+                              tableName="teste_leads"
+                            />
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
