@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { AssignLeadDialog } from "@/components/AssignLeadDialog";
+import { BulkAssignLeadsDialog } from "@/components/BulkAssignLeadsDialog";
 import { useUserRole } from "@/hooks/useUserRole";
 
 interface Lead {
@@ -273,6 +274,7 @@ export default function FiftyScripts() {
             <div className="flex gap-2">
               {(role === "admin" || role === "gestor") && (
                 <>
+                  <BulkAssignLeadsDialog onAssigned={fetchLeads} />
                   <Button 
                     variant={syncActive ? "destructive" : "default"} 
                     onClick={toggleSync}
