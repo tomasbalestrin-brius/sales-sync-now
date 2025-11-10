@@ -330,6 +330,7 @@ export default function MPM() {
               </div>
               {(role === "admin" || role === "gestor") && (
                 <>
+                  <BulkAssignLeadsDialog tableName="mpm_leads" onAssigned={fetchLeads} />
                   <Select value={selectedSdr} onValueChange={setSelectedSdr}>
                     <SelectTrigger className="w-[200px]">
                       <SelectValue placeholder="Filtrar por SDR" />

@@ -10,9 +10,10 @@ import { toast } from "sonner";
 
 interface BulkAssignLeadsDialogProps {
   onAssigned: () => void;
+  tableName: "fifty_scripts_leads" | "mpm_leads" | "teste_leads";
 }
 
-export function BulkAssignLeadsDialog({ onAssigned }: BulkAssignLeadsDialogProps) {
+export function BulkAssignLeadsDialog({ onAssigned, tableName }: BulkAssignLeadsDialogProps) {
   const [open, setOpen] = useState(false);
   const [sdrs, setSdrs] = useState<Array<{ id: string; full_name: string }>>([]);
   const [selectedSdr, setSelectedSdr] = useState<string>("");
@@ -66,7 +67,7 @@ export function BulkAssignLeadsDialog({ onAssigned }: BulkAssignLeadsDialogProps
     try {
       // Buscar leads não atribuídos
       const { data: unassignedLeads, error: fetchError } = await supabase
-        .from("fifty_scripts_leads")
+        .from(tableName)
         .select("id")
         .is("assigned_to", null)
         .order("form_submitted_at", { ascending: false })
@@ -83,7 +84,7 @@ export function BulkAssignLeadsDialog({ onAssigned }: BulkAssignLeadsDialogProps
       const leadIds = unassignedLeads.map((lead) => lead.id);
       
       const { error: updateError } = await supabase
-        .from("fifty_scripts_leads")
+        .from(tableName)
         .update({ assigned_to: selectedSdr })
         .in("id", leadIds);
 

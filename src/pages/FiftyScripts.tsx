@@ -392,7 +392,7 @@ export default function FiftyScripts() {
 
               {(role === "admin" || role === "gestor") && (
                 <>
-                  <BulkAssignLeadsDialog onAssigned={fetchLeads} />
+                  <BulkAssignLeadsDialog tableName="fifty_scripts_leads" onAssigned={fetchLeads} />
                   <Select
                     value={filterBySdr}
                     onValueChange={(value) => setFilterBySdr(value)}
@@ -695,7 +695,7 @@ export default function FiftyScripts() {
                           Leads recém-importados aguardando atribuição
                         </p>
                       </div>
-                      <BulkAssignLeadsDialog onAssigned={() => {
+                      <BulkAssignLeadsDialog tableName="fifty_scripts_leads" onAssigned={() => {
                         fetchLeads();
                         setSyncedLeads([]);
                       }} />

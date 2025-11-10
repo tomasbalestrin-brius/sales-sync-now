@@ -330,6 +330,7 @@ export default function Teste() {
               </div>
               {(role === "admin" || role === "gestor") && (
                 <>
+                  <BulkAssignLeadsDialog tableName="teste_leads" onAssigned={fetchLeads} />
                   <Select value={selectedSdr} onValueChange={setSelectedSdr}>
                     <SelectTrigger className="w-[200px]">
                       <SelectValue placeholder="Filtrar por SDR" />
