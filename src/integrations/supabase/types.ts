@@ -70,6 +70,7 @@ export type Database = {
       }
       fifty_scripts_leads: {
         Row: {
+          assigned_to: string | null
           created_at: string
           email: string | null
           form_submitted_at: string | null
@@ -82,6 +83,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           created_at?: string
           email?: string | null
           form_submitted_at?: string | null
@@ -94,6 +96,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           created_at?: string
           email?: string | null
           form_submitted_at?: string | null

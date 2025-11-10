@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { AssignLeadDialog } from "@/components/AssignLeadDialog";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Lead {
   id: string;
@@ -24,9 +26,14 @@ interface Lead {
   status: string;
   form_submitted_at: string | null;
   created_at: string;
+  assigned_to: string | null;
+  profiles?: {
+    full_name: string;
+  };
 }
 
 export default function FiftyScripts() {
+  const { role } = useUserRole();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -102,7 +109,24 @@ export default function FiftyScripts() {
       const { data, error } = await query.order("form_submitted_at", { ascending: false });
 
       if (error) throw error;
-      setLeads(data || []);
+      
+      // Fetch profile names for assigned leads
+      const leadsWithProfiles = await Promise.all(
+        (data || []).map(async (lead) => {
+          if (lead.assigned_to) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", lead.assigned_to)
+              .single();
+            
+            return { ...lead, profiles: profile };
+          }
+          return lead;
+        })
+      );
+      
+      setLeads(leadsWithProfiles);
     } catch (error: any) {
       toast.error("Erro ao carregar leads: " + error.message);
     } finally {
@@ -209,20 +233,25 @@ export default function FiftyScripts() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button 
-                variant={syncActive ? "destructive" : "default"} 
-                onClick={toggleSync}
-              >
-                {syncActive ? "Pausar Sincronização" : "Ativar Sincronização"}
-              </Button>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Lead
-              </Button>
+              {(role === "admin" || role === "gestor") && (
+                <>
+                  <Button 
+                    variant={syncActive ? "destructive" : "default"} 
+                    onClick={toggleSync}
+                  >
+                    {syncActive ? "Pausar Sincronização" : "Ativar Sincronização"}
+                  </Button>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Lead
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
           {/* Sync Controls */}
+          {(role === "admin" || role === "gestor") && (
           <Card className="p-4">
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -285,6 +314,7 @@ export default function FiftyScripts() {
               </div>
             </div>
           </Card>
+          )}
         </div>
 
         <div className="flex gap-4">
@@ -401,6 +431,7 @@ export default function FiftyScripts() {
                 <TableHead>Telefone</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Atribuído a</TableHead>
                 <TableHead>Preenchimento</TableHead>
                 <TableHead>Cadastro</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -409,13 +440,13 @@ export default function FiftyScripts() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center">
+                  <TableCell colSpan={9} className="text-center">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center">
+                  <TableCell colSpan={9} className="text-center">
                     Nenhum lead encontrado
                   </TableCell>
                 </TableRow>
@@ -434,6 +465,13 @@ export default function FiftyScripts() {
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      {lead.profiles ? (
+                        <Badge variant="outline">{lead.profiles.full_name}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">Não atribuído</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {lead.form_submitted_at
                         ? new Date(lead.form_submitted_at).toLocaleDateString("pt-BR")
                         : "-"}
@@ -442,9 +480,18 @@ export default function FiftyScripts() {
                       {new Date(lead.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Agendar Call
-                      </Button>
+                      <div className="flex gap-2 justify-end">
+                        {(role === "admin" || role === "gestor") && (
+                          <AssignLeadDialog
+                            leadId={lead.id}
+                            currentAssignedTo={lead.assigned_to || undefined}
+                            onAssigned={fetchLeads}
+                          />
+                        )}
+                        <Button variant="ghost" size="sm">
+                          Agendar Call
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
