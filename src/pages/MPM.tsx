@@ -84,7 +84,7 @@ export default function MPM() {
         user_id,
         profiles!inner(
           id,
-          name
+          full_name
         )
       `)
       .eq("role", "sdr");
@@ -96,7 +96,7 @@ export default function MPM() {
 
     const sdrList = data.map((item: any) => ({
       id: item.user_id,
-      name: item.profiles.name || "Sem nome"
+      name: item.profiles.full_name || "Sem nome"
     }));
 
     setSdrs(sdrList);
