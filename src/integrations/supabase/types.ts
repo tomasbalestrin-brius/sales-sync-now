@@ -110,6 +110,48 @@ export type Database = {
         }
         Relationships: []
       }
+      mpm_leads: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          email: string | null
+          form_submitted_at: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          source: string
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          form_submitted_at?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          source: string
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          form_submitted_at?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          source?: string
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -211,6 +253,48 @@ export type Database = {
           product_name?: string
           sheet_id?: string
           sheet_tab_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      teste_leads: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          email: string | null
+          form_submitted_at: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          source: string
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          form_submitted_at?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          source: string
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          form_submitted_at?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          source?: string
+          status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
         Relationships: []
