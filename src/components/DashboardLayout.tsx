@@ -64,7 +64,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 activeClassName="bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
               >
                 <UserCog className="h-5 w-5" />
-                <span className="font-medium">SDR</span>
+                <span className="font-medium">Usuários</span>
               </NavLink>
             )}
           </nav>
