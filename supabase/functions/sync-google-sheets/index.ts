@@ -105,9 +105,14 @@ async function fetchSheetData(accessToken: string, sheetId: string, sheetName: s
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    console.error('Sheet fetch error:', error);
-    throw new Error('Failed to fetch sheet data');
+    const errorData = await response.json();
+    console.error('Sheet fetch error:', JSON.stringify(errorData, null, 2));
+    
+    if (errorData.error?.message?.includes('Unable to parse range')) {
+      throw new Error(`Sheet tab "${sheetName}" not found. Please check the tab name in your Google Sheet matches exactly (case-sensitive). Common names: "Sheet1", "Página1", or check your sheet tabs.`);
+    }
+    
+    throw new Error(`Failed to fetch sheet data: ${errorData.error?.message || 'Unknown error'}`);
   }
 
   return await response.json();
