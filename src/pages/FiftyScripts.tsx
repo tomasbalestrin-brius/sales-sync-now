@@ -6,8 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, RefreshCw } from "lucide-react";
+import { Plus, Search, RefreshCw, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface Lead {
   id: string;
@@ -26,6 +32,9 @@ export default function FiftyScripts() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncActive, setSyncActive] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [syncDate, setSyncDate] = useState<Date | undefined>(new Date());
+  const [viewMode, setViewMode] = useState<"current" | "all">("current");
 
   useEffect(() => {
     fetchLeads();
@@ -41,7 +50,7 @@ export default function FiftyScripts() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [selectedMonth, viewMode]);
 
   const fetchSyncStatus = async () => {
     try {
@@ -61,10 +70,21 @@ export default function FiftyScripts() {
 
   const fetchLeads = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("fifty_scripts_leads")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*");
+
+      // Filter by selected month if in current mode
+      if (viewMode === "current" && selectedMonth) {
+        const startDate = startOfMonth(selectedMonth);
+        const endDate = endOfMonth(selectedMonth);
+        
+        query = query
+          .gte("form_submitted_at", startDate.toISOString())
+          .lte("form_submitted_at", endDate.toISOString());
+      }
+
+      const { data, error } = await query.order("form_submitted_at", { ascending: false });
 
       if (error) throw error;
       setLeads(data || []);
@@ -116,16 +136,26 @@ export default function FiftyScripts() {
       return;
     }
 
+    if (!syncDate) {
+      toast.error("Selecione um mês para sincronizar.");
+      return;
+    }
+
     setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-google-sheets");
+      const { data, error } = await supabase.functions.invoke("sync-google-sheets", {
+        body: {
+          targetMonth: format(syncDate, "yyyy-MM"),
+        },
+      });
       
       if (error) throw error;
       
       if (data?.success) {
         toast.success(
-          `Sincronização concluída! ${data.stats.inserted} novos leads, ${data.stats.skipped} ignorados.`
+          `Sincronização concluída! ${data.stats.inserted} novos leads, ${data.stats.skipped} ignorados para ${format(syncDate, "MMMM 'de' yyyy", { locale: ptBR })}.`
         );
+        fetchLeads();
       } else {
         throw new Error(data?.error || "Erro desconhecido");
       }
@@ -136,30 +166,80 @@ export default function FiftyScripts() {
     }
   };
 
+  // Generate list of months for quick selection
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const date = subMonths(new Date(), i);
+    return {
+      value: date,
+      label: format(date, "MMMM 'de' yyyy", { locale: ptBR }),
+    };
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">50 Scripts</h1>
-            <p className="text-muted-foreground">Gerencie leads do produto 50 Scripts</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">50 Scripts</h1>
+              <p className="text-muted-foreground">
+                Gerencie leads do produto 50 Scripts
+                {viewMode === "current" && ` - ${format(selectedMonth, "MMMM 'de' yyyy", { locale: ptBR })}`}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant={syncActive ? "destructive" : "default"} 
+                onClick={toggleSync}
+              >
+                {syncActive ? "Pausar Sincronização" : "Ativar Sincronização"}
+              </Button>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Lead
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant={syncActive ? "destructive" : "default"} 
-              onClick={toggleSync}
-            >
-              {syncActive ? "Pausar Sincronização" : "Ativar Sincronização"}
-            </Button>
-            <Button variant="outline" onClick={syncGoogleSheets} disabled={syncing || !syncActive}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-              Sincronizar Planilha
-            </Button>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Lead
-            </Button>
-          </div>
+
+          {/* Sync Controls */}
+          <Card className="p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">
+                  Selecionar mês para sincronizar:
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !syncDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {syncDate ? format(syncDate, "MMMM 'de' yyyy", { locale: ptBR }) : "Selecione um mês"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={syncDate}
+                      onSelect={setSyncDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex items-end">
+                <Button onClick={syncGoogleSheets} disabled={syncing || !syncActive}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                  Sincronizar
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
 
         <div className="flex gap-4">
@@ -172,7 +252,60 @@ export default function FiftyScripts() {
               className="pl-10"
             />
           </div>
+          
+          <Select
+            value={viewMode}
+            onValueChange={(value: "current" | "all") => setViewMode(value)}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="current">Filtrar por Mês</SelectItem>
+              <SelectItem value="all">Todos os Leads</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {viewMode === "current" && (
+            <Select
+              value={selectedMonth.toISOString()}
+              onValueChange={(value) => setSelectedMonth(new Date(value))}
+            >
+              <SelectTrigger className="w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((option) => (
+                  <SelectItem key={option.value.toISOString()} value={option.value.toISOString()}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
+
+        {/* Stats Card */}
+        <Card className="p-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Total de Leads</p>
+              <p className="text-2xl font-bold">{filteredLeads.length}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Novos</p>
+              <p className="text-2xl font-bold">
+                {filteredLeads.filter((l) => l.status === "novo").length}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Agendados</p>
+              <p className="text-2xl font-bold">
+                {filteredLeads.filter((l) => l.status === "agendado").length}
+              </p>
+            </div>
+          </div>
+        </Card>
 
         <Card>
           <Table>

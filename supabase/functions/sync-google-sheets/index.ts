@@ -202,8 +202,11 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Get target month from request body (format: "YYYY-MM")
+    const { targetMonth } = await req.json();
 
-    console.log('Starting Google Sheets sync...');
+    console.log('Starting Google Sheets sync...', targetMonth ? `for ${targetMonth}` : '');
 
     // Create Supabase client with service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -242,8 +245,24 @@ Deno.serve(async (req) => {
 
     // Parse data
     console.log('Parsing sheet data...');
-    const leads = parseSheetData(sheetData);
+    let leads = parseSheetData(sheetData);
     console.log(`Found ${leads.length} leads in sheet`);
+
+    // Filter by target month if specified
+    if (targetMonth) {
+      const [year, month] = targetMonth.split('-').map(Number);
+      leads = leads.filter(lead => {
+        if (!lead.form_submitted_at) return false;
+        
+        try {
+          const leadDate = new Date(lead.form_submitted_at);
+          return leadDate.getFullYear() === year && leadDate.getMonth() === month - 1;
+        } catch (e) {
+          return false;
+        }
+      });
+      console.log(`Filtered to ${leads.length} leads for ${targetMonth}`);
+    }
 
     // Insert leads (skip duplicates by email/phone)
     let inserted = 0;
