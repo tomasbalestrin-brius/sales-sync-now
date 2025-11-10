@@ -274,7 +274,7 @@ export default function FiftyScripts() {
           : format(syncDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
         
         toast.success(
-          `Sincronização concluída! ${data.stats.inserted} novos leads, ${data.stats.skipped} ignorados para ${dateStr}.`
+          `Sincronização concluída! ${data.newLeadsCount} novos leads, ${data.stats.skipped} ignorados para ${dateStr}.`
         );
         
         // Fetch all leads from the synced period

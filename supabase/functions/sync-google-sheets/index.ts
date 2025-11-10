@@ -205,29 +205,41 @@ Deno.serve(async (req) => {
     
     // Get target month or date from request body
     // targetMonth format: "YYYY-MM", targetDate format: "YYYY-MM-DD"
-    const { targetMonth, targetDate } = await req.json();
+    const { targetMonth, targetDate, productName = '50 Scripts' } = await req.json();
 
-    console.log('Starting Google Sheets sync...', targetMonth ? `for month ${targetMonth}` : targetDate ? `for day ${targetDate}` : '');
+    console.log('Starting Google Sheets sync...', productName, targetMonth ? `for month ${targetMonth}` : targetDate ? `for day ${targetDate}` : '');
 
     // Create Supabase client with service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get sync config for 50 Scripts
+    // Map product names to table names
+    const tableMap: Record<string, string> = {
+      '50 Scripts': 'fifty_scripts_leads',
+      'MPM': 'mpm_leads',
+      'Teste': 'teste_leads'
+    };
+
+    const tableName = tableMap[productName];
+    if (!tableName) {
+      throw new Error(`Invalid product name: ${productName}`);
+    }
+
+    // Get sync config for the product
     const { data: syncConfig, error: configError } = await supabase
       .from('sync_config')
       .select('*')
-      .eq('product_name', '50 Scripts')
+      .eq('product_name', productName)
       .single();
 
     if (configError || !syncConfig) {
-      throw new Error('Sync configuration not found for 50 Scripts');
+      throw new Error(`Sync configuration not found for ${productName}`);
     }
 
     if (!syncConfig.is_active) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'Sync is currently disabled for 50 Scripts',
+          message: `Sync is currently disabled for ${productName}`,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -287,7 +299,7 @@ Deno.serve(async (req) => {
     for (const lead of leads) {
       // Check if lead already exists
       const { data: existing } = await supabase
-        .from('fifty_scripts_leads')
+        .from(tableName)
         .select('id')
         .or(`email.eq.${lead.email},phone.eq.${lead.phone}`)
         .maybeSingle();
@@ -310,7 +322,7 @@ Deno.serve(async (req) => {
 
       // Insert new lead
       const { error } = await supabase
-        .from('fifty_scripts_leads')
+        .from(tableName)
         .insert({
           name: lead.name,
           email: lead.email,
@@ -333,7 +345,7 @@ Deno.serve(async (req) => {
     await supabase
       .from('sync_config')
       .update({ last_sync_at: new Date().toISOString() })
-      .eq('product_name', '50 Scripts');
+      .eq('product_name', productName);
 
     console.log(`Sync complete. Inserted: ${inserted}, Skipped: ${skipped}`);
 
@@ -341,6 +353,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         message: 'Sync completed',
+        newLeadsCount: inserted,
         stats: {
           total: leads.length,
           inserted,
