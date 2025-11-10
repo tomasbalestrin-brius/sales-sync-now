@@ -44,10 +44,15 @@ export default function FiftyScripts() {
   const [viewMode, setViewMode] = useState<"current" | "all">("current");
   const [syncMode, setSyncMode] = useState<"month" | "day">("day");
   const [viewFilterMode, setViewFilterMode] = useState<"month" | "day">("month");
+  const [filterBySdr, setFilterBySdr] = useState<string>("all");
+  const [sdrs, setSdrs] = useState<Array<{ id: string; full_name: string }>>([]);
 
   useEffect(() => {
     fetchLeads();
     fetchSyncStatus();
+    if (role === "admin" || role === "gestor") {
+      fetchSdrs();
+    }
 
     const channel = supabase
       .channel("fifty-scripts-changes")
@@ -59,7 +64,31 @@ export default function FiftyScripts() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedMonth, viewMode, viewFilterMode]);
+  }, [selectedMonth, viewMode, viewFilterMode, filterBySdr, role]);
+
+  const fetchSdrs = async () => {
+    try {
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "sdr");
+
+      if (rolesError) throw rolesError;
+
+      const sdrIds = rolesData.map((r) => r.user_id);
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", sdrIds);
+
+      if (profilesError) throw profilesError;
+
+      setSdrs(profilesData || []);
+    } catch (error: any) {
+      console.error("Erro ao buscar SDRs:", error);
+    }
+  };
 
   const fetchSyncStatus = async () => {
     try {
@@ -82,6 +111,15 @@ export default function FiftyScripts() {
       let query = supabase
         .from("fifty_scripts_leads")
         .select("*");
+
+      // Filter by SDR if selected (only for admin/gestor)
+      if (filterBySdr !== "all" && (role === "admin" || role === "gestor")) {
+        if (filterBySdr === "unassigned") {
+          query = query.is("assigned_to", null);
+        } else {
+          query = query.eq("assigned_to", filterBySdr);
+        }
+      }
 
       // Filter by selected period if in current mode
       if (viewMode === "current" && selectedMonth) {
@@ -327,6 +365,26 @@ export default function FiftyScripts() {
               className="pl-10"
             />
           </div>
+
+          {(role === "admin" || role === "gestor") && (
+            <Select
+              value={filterBySdr}
+              onValueChange={(value) => setFilterBySdr(value)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrar por SDR" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os SDRs</SelectItem>
+                <SelectItem value="unassigned">Não atribuídos</SelectItem>
+                {sdrs.map((sdr) => (
+                  <SelectItem key={sdr.id} value={sdr.id}>
+                    {sdr.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           
           <Select
             value={viewMode}
