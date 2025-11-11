@@ -521,6 +521,12 @@ export default function FiftyScripts() {
                     <TableHead>Nome</TableHead>
                     <TableHead>E-mail</TableHead>
                     <TableHead>Telefone</TableHead>
+                    <TableHead>Instagram</TableHead>
+                    <TableHead>Negócio</TableHead>
+                    <TableHead>Nicho</TableHead>
+                    <TableHead>Função</TableHead>
+                    <TableHead>Faturamento</TableHead>
+                    <TableHead>Lucro Líquido</TableHead>
                     <TableHead>Origem</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Atribuído a</TableHead>
@@ -532,13 +538,13 @@ export default function FiftyScripts() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center">
+                      <TableCell colSpan={15} className="text-center">
                         Carregando...
                       </TableCell>
                     </TableRow>
                   ) : filteredLeads.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center">
+                      <TableCell colSpan={15} className="text-center">
                         Nenhum lead encontrado
                       </TableCell>
                     </TableRow>
@@ -548,6 +554,12 @@ export default function FiftyScripts() {
                         <TableCell className="font-medium">{lead.name}</TableCell>
                         <TableCell>{lead.email || "-"}</TableCell>
                         <TableCell>{lead.phone || "-"}</TableCell>
+                        <TableCell>{lead.instagram_profissional || "-"}</TableCell>
+                        <TableCell>{lead.negocio || "-"}</TableCell>
+                        <TableCell>{lead.nicho_negocio || "-"}</TableCell>
+                        <TableCell>{lead.funcao_negocio || "-"}</TableCell>
+                        <TableCell>{lead.faturamento_mensal || "-"}</TableCell>
+                        <TableCell>{lead.lucro_liquido_mensal || "-"}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{lead.source}</Badge>
                         </TableCell>
