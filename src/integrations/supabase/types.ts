@@ -132,6 +132,10 @@ export type Database = {
           nicho_negocio: string | null
           notes: string | null
           phone: string | null
+          qualification_notes: string | null
+          qualified: boolean | null
+          qualified_at: string | null
+          qualified_by: string | null
           source: string
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
@@ -151,6 +155,10 @@ export type Database = {
           nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
+          qualification_notes?: string | null
+          qualified?: boolean | null
+          qualified_at?: string | null
+          qualified_by?: string | null
           source: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
@@ -170,9 +178,46 @@ export type Database = {
           nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
+          qualification_notes?: string | null
+          qualified?: boolean | null
+          qualified_at?: string | null
+          qualified_by?: string | null
           source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      lead_activities: {
+        Row: {
+          activity_type: string
+          created_at: string
+          description: string | null
+          id: string
+          lead_id: string
+          lead_table: string
+          sdr_id: string
+          title: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id: string
+          lead_table: string
+          sdr_id: string
+          title: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id?: string
+          lead_table?: string
+          sdr_id?: string
+          title?: string
         }
         Relationships: []
       }
@@ -192,6 +237,10 @@ export type Database = {
           nicho_negocio: string | null
           notes: string | null
           phone: string | null
+          qualification_notes: string | null
+          qualified: boolean | null
+          qualified_at: string | null
+          qualified_by: string | null
           source: string
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
@@ -211,6 +260,10 @@ export type Database = {
           nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
+          qualification_notes?: string | null
+          qualified?: boolean | null
+          qualified_at?: string | null
+          qualified_by?: string | null
           source: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
@@ -230,6 +283,10 @@ export type Database = {
           nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
+          qualification_notes?: string | null
+          qualified?: boolean | null
+          qualified_at?: string | null
+          qualified_by?: string | null
           source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
@@ -308,6 +365,51 @@ export type Database = {
           },
         ]
       }
+      sdr_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          lead_id: string | null
+          lead_table: string | null
+          priority: string
+          sdr_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          lead_id?: string | null
+          lead_table?: string | null
+          priority?: string
+          sdr_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          lead_id?: string | null
+          lead_table?: string | null
+          priority?: string
+          sdr_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sync_config: {
         Row: {
           created_at: string
@@ -357,6 +459,10 @@ export type Database = {
           nicho_negocio: string | null
           notes: string | null
           phone: string | null
+          qualification_notes: string | null
+          qualified: boolean | null
+          qualified_at: string | null
+          qualified_by: string | null
           source: string
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
@@ -376,6 +482,10 @@ export type Database = {
           nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
+          qualification_notes?: string | null
+          qualified?: boolean | null
+          qualified_at?: string | null
+          qualified_by?: string | null
           source: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
@@ -395,6 +505,10 @@ export type Database = {
           nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
+          qualification_notes?: string | null
+          qualified?: boolean | null
+          qualified_at?: string | null
+          qualified_by?: string | null
           source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string

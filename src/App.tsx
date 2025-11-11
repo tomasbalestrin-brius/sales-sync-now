@@ -13,6 +13,7 @@ import Teste from "./pages/Teste";
 import Agenda from "./pages/Agenda";
 import AgendaScheduling from "./pages/AgendaScheduling";
 import SDR from "./pages/SDR";
+import DashboardSDR from "./pages/DashboardSDR";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SDR />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard-sdr"
+              element={
+                <ProtectedRoute>
+                  <DashboardSDR />
                 </ProtectedRoute>
               }
             />
