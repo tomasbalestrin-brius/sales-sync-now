@@ -1,8 +1,6 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
-import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface ScheduleLeadButtonProps {
   leadId: string;
@@ -23,44 +21,25 @@ export function ScheduleLeadButton({
   leadName,
   leadPhone,
   leadEmail,
-  instagramProfissional,
-  negocio,
-  nichoNegocio,
-  funcaoNegocio,
-  faturamentoMensal,
-  lucroLiquidoMensal,
   tableName,
 }: ScheduleLeadButtonProps) {
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSchedule = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("schedule-lead-webhook", {
-        body: {
-          leadId,
-          leadName,
-          leadPhone,
-          leadEmail,
-          instagramProfissional,
-          negocio,
-          nichoNegocio,
-          funcaoNegocio,
-          faturamentoMensal,
-          lucroLiquidoMensal,
-          tableName,
-        },
-      });
+  const handleSchedule = () => {
+    const funnelMap: Record<string, string> = {
+      "fifty_scripts_leads": "fifty_scripts",
+      "mpm_leads": "mpm",
+      "teste_leads": "teste",
+    };
 
-      if (error) throw error;
-
-      toast.success("Lead agendado com sucesso! Webhook enviado.");
-    } catch (error: any) {
-      console.error("Error scheduling lead:", error);
-      toast.error("Erro ao agendar lead: " + error.message);
-    } finally {
-      setLoading(false);
-    }
+    navigate("/agenda/novo", {
+      state: {
+        leadName,
+        leadPhone,
+        leadEmail,
+        funnel: funnelMap[tableName] || "",
+      },
+    });
   };
 
   return (
@@ -68,11 +47,10 @@ export function ScheduleLeadButton({
       variant="outline"
       size="sm"
       onClick={handleSchedule}
-      disabled={loading}
       className="gap-2"
     >
       <Calendar className="h-4 w-4" />
-      {loading ? "Agendando..." : "Agendar"}
+      Agendar
     </Button>
   );
 }

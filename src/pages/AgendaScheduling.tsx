@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ interface TimeSlot {
 
 export default function AgendaScheduling() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [closers, setClosers] = useState<Closer[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedCloser, setSelectedCloser] = useState<string>("");
@@ -40,7 +41,16 @@ export default function AgendaScheduling() {
 
   useEffect(() => {
     fetchClosers();
-  }, []);
+    
+    // Preencher dados do lead se vier da navegação
+    if (location.state) {
+      const { leadName, leadPhone, leadEmail, funnel } = location.state;
+      if (leadName) setLeadName(leadName);
+      if (leadPhone) setLeadPhone(leadPhone);
+      if (leadEmail) setLeadEmail(leadEmail);
+      if (funnel) setFunnel(funnel);
+    }
+  }, [location]);
 
   useEffect(() => {
     if (selectedDate && selectedCloser) {
