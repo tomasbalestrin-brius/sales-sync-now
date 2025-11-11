@@ -12,6 +12,12 @@ interface SheetRow {
   phone?: string;
   source: string;
   notes?: string;
+  instagram_profissional?: string;
+  negocio?: string;
+  nicho_negocio?: string;
+  funcao_negocio?: string;
+  faturamento_mensal?: string;
+  lucro_liquido_mensal?: string;
 }
 
 async function getGoogleSheetsAccessToken() {
@@ -144,14 +150,23 @@ function parseSheetData(data: any): SheetRow[] {
   const sourceIndex = headers.findIndex((h: string) => 
     h?.toLowerCase() === 'fonte' || h?.toLowerCase() === 'source'
   );
+  const instagramIndex = headers.findIndex((h: string) => 
+    h?.toLowerCase().includes('instagram') || h?.toLowerCase().includes('@')
+  );
   const businessIndex = headers.findIndex((h: string) => 
-    h?.includes('negócio') || h?.includes('business')
+    h?.toLowerCase().includes('negócio') || h?.toLowerCase().includes('business')
   );
   const nicheIndex = headers.findIndex((h: string) => 
-    h?.includes('nicho') || h?.includes('niche')
+    h?.toLowerCase().includes('nicho') || h?.toLowerCase().includes('niche')
+  );
+  const roleIndex = headers.findIndex((h: string) => 
+    h?.toLowerCase().includes('função') || h?.toLowerCase().includes('role')
   );
   const revenueIndex = headers.findIndex((h: string) => 
-    h?.includes('faturamento') || h?.includes('revenue')
+    h?.toLowerCase().includes('faturamento') || h?.toLowerCase().includes('revenue')
+  );
+  const profitIndex = headers.findIndex((h: string) => 
+    h?.toLowerCase().includes('lucro líquido') || h?.toLowerCase().includes('lucro liquido') || h?.toLowerCase().includes('profit')
   );
 
   console.log('Column mapping:', {
@@ -159,9 +174,12 @@ function parseSheetData(data: any): SheetRow[] {
     emailIndex,
     phoneIndex,
     sourceIndex,
+    instagramIndex,
     businessIndex,
     nicheIndex,
+    roleIndex,
     revenueIndex,
+    profitIndex,
   });
 
   const leads: SheetRow[] = [];
@@ -172,25 +190,19 @@ function parseSheetData(data: any): SheetRow[] {
     // Skip empty rows
     if (!row || row.length === 0 || !row[nameIndex]) continue;
 
-    // Build notes from additional fields
-    const notesArray = [];
-    if (businessIndex >= 0 && row[businessIndex]) {
-      notesArray.push(`Negócio: ${row[businessIndex]}`);
-    }
-    if (nicheIndex >= 0 && row[nicheIndex]) {
-      notesArray.push(`Nicho: ${row[nicheIndex]}`);
-    }
-    if (revenueIndex >= 0 && row[revenueIndex]) {
-      notesArray.push(`Faturamento: ${row[revenueIndex]}`);
-    }
-
     leads.push({
       form_submitted_at: row[dateIndex] || undefined,
       name: row[nameIndex] || '',
       email: emailIndex >= 0 ? row[emailIndex] : undefined,
       phone: phoneIndex >= 0 ? row[phoneIndex] : undefined,
       source: sourceIndex >= 0 ? (row[sourceIndex] || 'Google Sheets') : 'Google Sheets',
-      notes: notesArray.length > 0 ? notesArray.join(' | ') : undefined,
+      instagram_profissional: instagramIndex >= 0 ? row[instagramIndex] : undefined,
+      negocio: businessIndex >= 0 ? row[businessIndex] : undefined,
+      nicho_negocio: nicheIndex >= 0 ? row[nicheIndex] : undefined,
+      funcao_negocio: roleIndex >= 0 ? row[roleIndex] : undefined,
+      faturamento_mensal: revenueIndex >= 0 ? row[revenueIndex] : undefined,
+      lucro_liquido_mensal: profitIndex >= 0 ? row[profitIndex] : undefined,
+      notes: undefined,
     });
   }
 
@@ -333,6 +345,12 @@ Deno.serve(async (req) => {
           email: lead.email,
           phone: lead.phone,
           source: lead.source,
+          instagram_profissional: lead.instagram_profissional,
+          negocio: lead.negocio,
+          nicho_negocio: lead.nicho_negocio,
+          funcao_negocio: lead.funcao_negocio,
+          faturamento_mensal: lead.faturamento_mensal,
+          lucro_liquido_mensal: lead.lucro_liquido_mensal,
           notes: lead.notes,
           status: 'novo',
           form_submitted_at: parsedDate,
