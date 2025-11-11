@@ -9,6 +9,12 @@ interface ScheduleLeadButtonProps {
   leadName: string;
   leadPhone: string;
   leadEmail?: string;
+  instagramProfissional?: string;
+  negocio?: string;
+  nichoNegocio?: string;
+  funcaoNegocio?: string;
+  faturamentoMensal?: string;
+  lucroLiquidoMensal?: string;
   tableName: "fifty_scripts_leads" | "mpm_leads" | "teste_leads";
 }
 
@@ -17,6 +23,12 @@ export function ScheduleLeadButton({
   leadName,
   leadPhone,
   leadEmail,
+  instagramProfissional,
+  negocio,
+  nichoNegocio,
+  funcaoNegocio,
+  faturamentoMensal,
+  lucroLiquidoMensal,
   tableName,
 }: ScheduleLeadButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -30,6 +42,12 @@ export function ScheduleLeadButton({
           leadName,
           leadPhone,
           leadEmail,
+          instagramProfissional,
+          negocio,
+          nichoNegocio,
+          funcaoNegocio,
+          faturamentoMensal,
+          lucroLiquidoMensal,
           tableName,
         },
       });

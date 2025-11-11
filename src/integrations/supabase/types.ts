@@ -73,9 +73,15 @@ export type Database = {
           assigned_to: string | null
           created_at: string
           email: string | null
+          faturamento_mensal: string | null
           form_submitted_at: string | null
+          funcao_negocio: string | null
           id: string
+          instagram_profissional: string | null
+          lucro_liquido_mensal: string | null
           name: string
+          negocio: string | null
+          nicho_negocio: string | null
           notes: string | null
           phone: string | null
           source: string
@@ -86,9 +92,15 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           email?: string | null
+          faturamento_mensal?: string | null
           form_submitted_at?: string | null
+          funcao_negocio?: string | null
           id?: string
+          instagram_profissional?: string | null
+          lucro_liquido_mensal?: string | null
           name: string
+          negocio?: string | null
+          nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
           source: string
@@ -99,9 +111,15 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           email?: string | null
+          faturamento_mensal?: string | null
           form_submitted_at?: string | null
+          funcao_negocio?: string | null
           id?: string
+          instagram_profissional?: string | null
+          lucro_liquido_mensal?: string | null
           name?: string
+          negocio?: string | null
+          nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
           source?: string
@@ -115,9 +133,15 @@ export type Database = {
           assigned_to: string | null
           created_at: string
           email: string | null
+          faturamento_mensal: string | null
           form_submitted_at: string | null
+          funcao_negocio: string | null
           id: string
+          instagram_profissional: string | null
+          lucro_liquido_mensal: string | null
           name: string
+          negocio: string | null
+          nicho_negocio: string | null
           notes: string | null
           phone: string | null
           source: string
@@ -128,9 +152,15 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           email?: string | null
+          faturamento_mensal?: string | null
           form_submitted_at?: string | null
+          funcao_negocio?: string | null
           id?: string
+          instagram_profissional?: string | null
+          lucro_liquido_mensal?: string | null
           name: string
+          negocio?: string | null
+          nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
           source: string
@@ -141,9 +171,15 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           email?: string | null
+          faturamento_mensal?: string | null
           form_submitted_at?: string | null
+          funcao_negocio?: string | null
           id?: string
+          instagram_profissional?: string | null
+          lucro_liquido_mensal?: string | null
           name?: string
+          negocio?: string | null
+          nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
           source?: string
@@ -262,9 +298,15 @@ export type Database = {
           assigned_to: string | null
           created_at: string
           email: string | null
+          faturamento_mensal: string | null
           form_submitted_at: string | null
+          funcao_negocio: string | null
           id: string
+          instagram_profissional: string | null
+          lucro_liquido_mensal: string | null
           name: string
+          negocio: string | null
+          nicho_negocio: string | null
           notes: string | null
           phone: string | null
           source: string
@@ -275,9 +317,15 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           email?: string | null
+          faturamento_mensal?: string | null
           form_submitted_at?: string | null
+          funcao_negocio?: string | null
           id?: string
+          instagram_profissional?: string | null
+          lucro_liquido_mensal?: string | null
           name: string
+          negocio?: string | null
+          nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
           source: string
@@ -288,9 +336,15 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           email?: string | null
+          faturamento_mensal?: string | null
           form_submitted_at?: string | null
+          funcao_negocio?: string | null
           id?: string
+          instagram_profissional?: string | null
+          lucro_liquido_mensal?: string | null
           name?: string
+          negocio?: string | null
+          nicho_negocio?: string | null
           notes?: string | null
           phone?: string | null
           source?: string

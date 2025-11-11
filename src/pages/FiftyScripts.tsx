@@ -33,6 +33,12 @@ interface Lead {
   profiles?: {
     full_name: string;
   };
+  instagram_profissional?: string | null;
+  negocio?: string | null;
+  nicho_negocio?: string | null;
+  funcao_negocio?: string | null;
+  faturamento_mensal?: string | null;
+  lucro_liquido_mensal?: string | null;
 }
 
 export default function FiftyScripts() {
@@ -580,6 +586,12 @@ export default function FiftyScripts() {
                                 leadName={lead.name}
                                 leadPhone={lead.phone || ""}
                                 leadEmail={lead.email || undefined}
+                                instagramProfissional={lead.instagram_profissional || undefined}
+                                negocio={lead.negocio || undefined}
+                                nichoNegocio={lead.nicho_negocio || undefined}
+                                funcaoNegocio={lead.funcao_negocio || undefined}
+                                faturamentoMensal={lead.faturamento_mensal || undefined}
+                                lucroLiquidoMensal={lead.lucro_liquido_mensal || undefined}
                                 tableName="fifty_scripts_leads"
                               />
                             )}

@@ -11,7 +11,19 @@ serve(async (req) => {
   }
 
   try {
-    const { leadId, leadName, leadPhone, leadEmail, tableName } = await req.json();
+    const { 
+      leadId, 
+      leadName, 
+      leadPhone, 
+      leadEmail, 
+      instagramProfissional,
+      negocio,
+      nichoNegocio,
+      funcaoNegocio,
+      faturamentoMensal,
+      lucroLiquidoMensal,
+      tableName 
+    } = await req.json();
 
     // Get webhook URL from environment variable
     const WEBHOOK_URL = Deno.env.get("EXTERNAL_WEBHOOK_URL");
@@ -26,6 +38,12 @@ serve(async (req) => {
       lead_name: leadName,
       lead_phone: leadPhone,
       lead_email: leadEmail,
+      instagram_profissional: instagramProfissional,
+      negocio: negocio,
+      nicho_negocio: nichoNegocio,
+      funcao_negocio: funcaoNegocio,
+      faturamento_mensal: faturamentoMensal,
+      lucro_liquido_mensal: lucroLiquidoMensal,
       table_name: tableName,
       timestamp: new Date().toISOString(),
     };
