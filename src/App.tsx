@@ -11,6 +11,7 @@ import FiftyScripts from "./pages/FiftyScripts";
 import MPM from "./pages/MPM";
 import Teste from "./pages/Teste";
 import Agenda from "./pages/Agenda";
+import AgendaScheduling from "./pages/AgendaScheduling";
 import SDR from "./pages/SDR";
 import NotFound from "./pages/NotFound";
 
@@ -77,6 +78,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Agenda />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agenda/novo"
+              element={
+                <ProtectedRoute>
+                  <AgendaScheduling />
                 </ProtectedRoute>
               }
             />
