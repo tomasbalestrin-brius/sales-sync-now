@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          closer_id: string
+          created_at: string | null
+          funnel: string
+          id: string
+          lead_email: string | null
+          lead_id: string | null
+          lead_name: string
+          lead_phone: string | null
+          notes: string | null
+          scheduled_date: string
+          scheduled_time: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          closer_id: string
+          created_at?: string | null
+          funnel: string
+          id?: string
+          lead_email?: string | null
+          lead_id?: string | null
+          lead_name: string
+          lead_phone?: string | null
+          notes?: string | null
+          scheduled_date: string
+          scheduled_time: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          closer_id?: string
+          created_at?: string | null
+          funnel?: string
+          id?: string
+          lead_email?: string | null
+          lead_id?: string | null
+          lead_name?: string
+          lead_phone?: string | null
+          notes?: string | null
+          scheduled_date?: string
+          scheduled_time?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       calls: {
         Row: {
           closer_id: string
@@ -350,6 +398,36 @@ export type Database = {
           source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      time_slots_config: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean | null
+          slot_duration_minutes: number
+          start_time: string
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          slot_duration_minutes?: number
+          start_time?: string
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          slot_duration_minutes?: number
+          start_time?: string
         }
         Relationships: []
       }
