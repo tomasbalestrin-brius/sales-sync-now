@@ -77,48 +77,25 @@ export default function SDR() {
 
   const createUser = async () => {
     try {
-      // Create user via Supabase Auth Admin API
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newUserEmail,
-        password: newUserPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: newUserName,
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          email: newUserEmail,
+          password: newUserPassword,
+          fullName: newUserName,
+          role: newUserRole,
         },
       });
 
-      if (authError) throw authError;
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
-      if (authData.user) {
-        // Create profile
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert({
-            id: authData.user.id,
-            email: newUserEmail,
-            full_name: newUserName,
-          });
-
-        if (profileError) throw profileError;
-
-        // Create role
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .insert({
-            user_id: authData.user.id,
-            role: newUserRole,
-          });
-
-        if (roleError) throw roleError;
-
-        toast.success("Usuário criado com sucesso!");
-        setDialogOpen(false);
-        setNewUserEmail("");
-        setNewUserName("");
-        setNewUserPassword("");
-        setNewUserRole("sdr");
-        fetchUsers();
-      }
+      toast.success("Usuário criado com sucesso!");
+      setDialogOpen(false);
+      setNewUserEmail("");
+      setNewUserName("");
+      setNewUserPassword("");
+      setNewUserRole("sdr");
+      fetchUsers();
     } catch (error: any) {
       toast.error("Erro ao criar usuário: " + error.message);
     }
@@ -128,8 +105,12 @@ export default function SDR() {
     if (!confirm("Tem certeza que deseja excluir este usuário?")) return;
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { userId },
+      });
+
       if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
       toast.success("Usuário excluído com sucesso!");
       fetchUsers();
